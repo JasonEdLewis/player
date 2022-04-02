@@ -2,6 +2,7 @@ import React, { Component} from "react";
 import Player from "./components/Player"
 import { ethers } from "ethers";
 import ipfs from "./ipfs";
+import readWrite from './read_write_files'
 
 import "./App.css";
 
@@ -14,9 +15,9 @@ class App extends Component {
     this.state = {
       ipfsHash: '',
       hashes:[],
-      song:{},
+      songs:[],
       provider: null,
-      buffer: null,
+      buffer: Array(),
       account: null,
       showPlayer: false,
     }
@@ -27,6 +28,8 @@ class App extends Component {
 
 
 componentDidMount = async () => {
+
+
   const ERC20_ABI = [
     "function set(string memory)",
     "function get(uint idx) public view returns (string)",
@@ -35,14 +38,14 @@ componentDidMount = async () => {
   ];
   const provider = new ethers.providers.Web3Provider(window.ethereum)
   await provider.send("eth_requestAccounts", []).then((result) => {this.setState({account:result[0]})})
-  const address = "0x9ea7F90A9c2F122FEe4D2FaBF4a908A1B2bA6cb9" // SimpleStore Address
+  const address = "0x680507CB478888cb1Bf06402caa26982c2e597F1" // SimpleStore Address
   const contract = new ethers.Contract(address, ERC20_ABI, provider)
   const signer = provider.getSigner();
   const contractSigner = contract.connect(signer)  
   const hashes = await contractSigner.getAll.call()
-  console.log("Initializing ......\nHashes: ")
-  console.log(hashes)
-  hashes.length && this.setState({hashes})
+  console.log("Initializing ......")
+  // console.log(hashes)
+  // hashes.length && this.setState({hashes})
 
    
   
@@ -75,40 +78,43 @@ componentDidMount = async () => {
   };
 
     captureFile = (e) =>{
-      e.preventDefault();
-      const payload ={}
-      const file = e.target.files
-      for (let i = 0; i < file.length; i++){
-        console.log(file[i])
-      }
+      e.preventDefault();  
+      const files = e.target.files
       
-      // payload.title = file[0].name.split('.')[0]
-      // payload.artist = file.artist || " "
-      // payload.album = file.artist || " "
-      // payload.type = file.album || payload.title
-      // this.setState({song: payload})
+      for (let i = 0; i < files.length; i++){
+      const title = files[i]['name'].split(".")[0]
+      const payload = {}
+      payload['title']= title
       const reader = new window.FileReader();
-      reader.readAsArrayBuffer(file)
+      reader.readAsArrayBuffer(files[i])
       reader.onloadend = () => {
-        this.setState({ buffer: Buffer(reader.result)})
+        payload['hash'] = Buffer(reader.result)
+       this.setState({ songs: [...this.state.songs,payload]})
       }
-      // console.log(this.state.song)
+      }
 
     }
     onSubmit  = (e) =>{
       e.preventDefault();
-      ipfs.files.add(this.state.buffer,(error, result) => {
-        if(error){
-          console.log(error);
-          return
-        }
-        else{
-          e.input = null;
-          this.setState({ipfsHash:result[0].hash, song: {...this.state.song.hash = result[0].hash}})
-          console.log('ipfs Hash:  ', this.state.ipfsHash)
-          this.writeToContract()
-        }
+      const songsWithHashes =[]
+      this.state.songs.forEach( song =>{
+        ipfs.files.add(song['hash'],(error, result) => {
+          if(error){
+            console.log(error);
+            return
+          }
+          else{
+            e.input = null;
+            song['hash'] = result[0].hash 
+            songsWithHashes.push(song)
+           
+            // this.writeToContract()
+          }
+        })
       })
+      this.setState({songs:songsWithHashes})
+      console.log
+      
     }
    
   render() {
