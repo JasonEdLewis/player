@@ -13,8 +13,6 @@ class App extends Component {
     super(props)
     
     this.state = {
-      ipfsHash: '',
-      hashes:[],
       songs:[],
       provider: null,
       buffer: Array(),
@@ -29,37 +27,32 @@ class App extends Component {
 
 componentDidMount = async () => {
 
-
   const ERC20_ABI = [
-    "function set(string memory)",
-    "function get(uint idx) public view returns (string)",
-    "function getAll() public view returns (string[] memory) ",
-    "function remove() public returns(bool)"
+    "function getAlbum()public view returns (string memory, string memory,string memory,string memory)",
+    "function getSong(string memory _title) public view returns (Song memory)",
+    "function addSong(string memory _hash, string memory _title)",
+    "function getSongs() public view returns (Song[] memory)"
   ];
   const provider = new ethers.providers.Web3Provider(window.ethereum)
   await provider.send("eth_requestAccounts", []).then((result) => {this.setState({account:result[0]})})
-  const address = "0x680507CB478888cb1Bf06402caa26982c2e597F1" // SimpleStore Address
+  const address = "0x8c45FE31ef823C765a58ba0D1a8ea90b68a17760" // SimpleStore Address
   const contract = new ethers.Contract(address, ERC20_ABI, provider)
   const signer = provider.getSigner();
   const contractSigner = contract.connect(signer)  
-  const hashes = await contractSigner.getAll.call()
+  // const hashes = await contractSigner.getAll.call()
   console.log("Initializing ......")
   // console.log(hashes)
   // hashes.length && this.setState({hashes})
-
-   
-  
-
 
 // MetaMask requires requesting permission to connect users accounts
 // const wallet = new ethers.Wallet(privateKey1,provider)
 
 
-  this.writeToContract =  async () =>{
-   const tx = await contractSigner.set(this.state.song)
+  this.addSongToContract =  async () =>{
+   const tx = await contractSigner.set(this.state.songs)
    await tx.wait()
-   await contractSigner.getAll().then(results => {
-     this.setState({hashes: results, showPlayer: !!hashes })
+   await contractSigner.getSongs().then(results => {
+     this.setState({songs: results, showPlayer: !!this.state.songs })
    })
    
    
@@ -113,7 +106,7 @@ componentDidMount = async () => {
         })
       })
       this.setState({songs:songsWithHashes})
-      console.log
+      console.log(this.state.songs)
       
     }
    
@@ -139,7 +132,7 @@ componentDidMount = async () => {
             <button onClick={() => this.removeSong()}>Remove Song</button>
           </div>
           <div style={{marginTop:"2%"}}>
-          { this.state.hashes.length > 0 && <Player hashes={this.state.hashes}/>}
+          { this.state.songs.length > 0 && <Player songs={this.state.songs}/>}
           </div>
           
         </div>
