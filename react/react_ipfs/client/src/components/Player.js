@@ -1,17 +1,18 @@
-import React from 'react'
+import React from 'react';
+import Card from "./ShowCard"
  
-const Player = (props) => {
-    const songs = props.hashes.map((prop, idx) => {
-    return (<div style={{margin:"2.5%"}} key={idx}>
-        <audio src={`https://ipfs.io/ipfs/${prop}`} controls ></audio>
+const Player = ({songs}) => {
+    const theSongs = songs.map((song, idx) => {
+    return (<div style={{margin:"5%", padding:"1em", border: "0.05px dashed"}} key={idx}>
+        <audio src={`https://ipfs.io/ipfs/${song.hash}`} controls type="audio"></audio>
+        <h6>{song.title}</h6>
     </div>)
     }
-    
     
 );
   return (
     <div >
-        {songs}
+        {theSongs}
     </div>
   )
 }
