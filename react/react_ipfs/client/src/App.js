@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import ipfs from "./ipfs";
 import { abi } from "./contracts/AlbumNft.json";
 import ShowCard from "./components/ShowCard.js";
+import  BSON from "bson";
 import readWrite from './read_write_files'
 
 import "./App.css";
@@ -16,16 +17,19 @@ class App extends Component {
     
     this.state = {
       album:Object(),
-      songs:[],
+      songs: Array(),
       provider: null,
       buffer: Array(),
       account: null,
       showPlayer: false,
-      contractSigner:null
+      contractSigner:null,
+      albumSet:false,
+      albumBuffer:[],
+      albumHash:[],
     }
     this.captureFile = this.captureFile.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
-    // this.addSongToContract = this.addSongToContract.bind(this);
+    // this.addSongsToContract = this.addSongsToContract.bind(this);
     
   }
 
@@ -40,27 +44,29 @@ componentDidMount = async () => {
   // ];
   const provider = new ethers.providers.Web3Provider(window.ethereum)
   await provider.send("eth_requestAccounts", []).then((result) => {this.setState({account:result[0]})})
-  const address = "0x29c62d412f3F9eFA07aFa596dFB4C9610A2BFC8c" // SimpleStore Address
+  const address = "0x7140c71C8881aD817FAef8B27a13f08C2083b431" // SimpleStore Address
   const contract = new ethers.Contract(address, abi, provider)
   const signer = provider.getSigner();
   const contractSigner = contract.connect(signer)  
   this.setState({contractSigner})
   const album = await contractSigner.getAlbum()
-  const songs = await contractSigner.getSongs()
-  console.log(songs)
+  // const songs = await contractSigner.getSongs()
+  console.log("the Album: ")
+ 
+  // console.log(songs)
   const albumObj ={
     "cover_hash":album[0],
     "title": album[1],
     "artist":album[2],
-    "buffer":"",
-    "year": album[3]
+    "year": album[3],
+    "songs": album[4] || [],
     }
-
+  // console.log(albumObj)
+  // return
   const loadedSongs =[]
-  songs.forEach(song=>{
-    // console.log(song["album"])
+  albumObj.songs.forEach(song=>{
     const obj ={
-      "hash": song.hash,
+      "URI": `https://ipfs.io/ipfs/${song.hash}`,
       "title": song.title,
       "artist": song.artist,
       "album" : song.album,
@@ -68,30 +74,12 @@ componentDidMount = async () => {
     }
     loadedSongs.push(obj)
   })
-  this.setState({album: albumObj, songs:loadedSongs, showPlayer:!!songs})
+  this.setState({album: albumObj, songs:loadedSongs , showPlayer:!!loadedSongs})
   console.log("Initializing ......")
-  console.log(this.state.songs)
-  // console.log(hashes)
-  // hashes.length && this.setState({hashes})
-
-// MetaMask requires requesting permission to connect users accounts
-// const wallet = new ethers.Wallet(privateKey1,provider)
-
-
-  // this.addSongsToContract =  async (songs) =>{
-  //   for( let i = 0; i < songs.length; i++){
-  //     console.log(songs[i])
-  //     const tx = await contractSigner.addSong(songs[i].hash,songs[i].title)
-  //     await tx.wait()
-  //     console.log(`Transaction: ${i+1}`)
-  //     console.log(tx)
-  //   }
-  //    await contractSigner.getSongs().then(results => {
-  //    this.setState({songs: results, showPlayer: !!this.state.songs })
-  //  })
-   
-   
-  //  }
+  // console.log(`Album: ${this.state.album.title}`)
+  // console.log("The Songs: ")
+  // console.log(this.state.songs)
+  
 
    this.removeSong = async() =>{
     const tx = await contractSigner.remove()
@@ -104,7 +92,7 @@ componentDidMount = async () => {
    }
    
   };
-    addSongToContract =  async (song) =>{
+    addSongsToContract =  async (song) =>{
     const tx = await this.state.contractSigner.addSong(song.hash,song.title)
     await tx.wait()
     console.log(tx)
@@ -134,7 +122,6 @@ componentDidMount = async () => {
       reader.onloadend = () => {
           payload['buffer'] = Buffer(reader.result)
        this.setState({ songs: [...this.state.songs,payload]})
-       console.log(this.state.songs)
       }
       
       }
@@ -159,7 +146,6 @@ componentDidMount = async () => {
          
       }
       else{
-            const songsWithHashes =[]
             this.state.songs.forEach( song =>{
               ipfs.files.add(song.buffer,(error, result) => {
                 if(error){
@@ -169,18 +155,63 @@ componentDidMount = async () => {
                 else{
                   song['hash'] = result[0].hash 
                   song.buffer =""
-                  this.addSongToContract(song)
+                  this.addSongsToContract(song)
                 }
               })
             })
-            console.log(songsWithHashes)
-            this.setState({songs:songsWithHashes})
-            console.log(this.state.songs)
-            
       }
       
       
     }
+
+
+    processFilesToIpfs = async (buffer) =>{
+      ipfs.files.add(buffer,(error, result) => {
+        if(error){
+          console.log(error);
+          return
+        }
+        else{
+          console.log(result)
+        }
+      })
+    }
+  
+     readAndSetFiles = async (files) =>{
+      const reader = new FileReader();
+        reader.readAsArrayBuffer(files)
+        reader.onloadend = () => {
+          console.log(Buffer(reader.result))
+         return this.setState({ albumBuffer: [...this.state.albumBuffer,Buffer(reader.result)]})
+          
+        }
+        console.log(this.state.albumBuffer)
+        // await this.processFilesToIpfs(this.state.albumBuffer[0])
+    }
+    getAlbumURI = async ( ) =>{
+      const payload = {
+        name:this.state.album.title,
+        description:`this is A Starr's album entitled: ${this.state.album.artist} released in ${this.state.album.year}`,
+        image: `https://ipfs.io/ipfs/${this.state.album.cover_hash}`,
+        attributes : this.state.songs
+      }
+      const json_payload =  JSON.stringify({payload})
+      
+      const albumMetaDataFile = new File(new Blob([json_payload],"album.json"))
+      await this.readAndSetFiles(albumMetaDataFile)
+      // await this.processFilesToIpfs(this.state.albumBuffer[0])
+      }
+    
+      
+      
+
+      // const blob =new Blob([JSON.stringify(jsonPayload)],{type:"application/json"})
+      // console.log(Buffer.from(jsonPayload))
+    // Works  https://ipfs.io/ipfs/QmdRF2BuwRw4V1QbLs6QQiqtEgRPn6wiysq8NScWugfFbq
+    //  https://ipfs.io/ipfs/QmWDXegLd7sP48K7uwYc95qTMRkoB8nCRZnfpiBMgvDvEj
+    //https://ipfs.io/ipfs/QmcCwymWnVymYLYuPYTNubGw71Ru8WTqSPJXj3fcADwiGS
+    // QmWDXegLd7sP48K7uwYc95qTMRkoB8nCRZnfpiBMgvDvEj
+      // QmdRF2BuwRw4V1QbLs6QQiqtEgRPn6wiysq8NScWugfFbq
        
    
   render() {
@@ -189,7 +220,7 @@ componentDidMount = async () => {
     
     return (
       <>
-    { !this.state.showPlayer ? <div className="App">
+     <div className="App">
       <nav className="navbar pure-menu pure-menu-horizontal">
         <a href="#" className="pure-menu-heading pure-menu-link">NFTp</a>
       </nav>
@@ -205,13 +236,14 @@ componentDidMount = async () => {
               <input type='file' onChange={this.captureFile} multiple/>
               <input type='submit' />
             </form>
-            <button onClick={() => this.removeSong()}>Remove Song</button>
+            {/* <button onClick={() => this.removeSong()}>Remove Song</button> */}
+            <button onClick={()=> this.getAlbumURI()}>Mint Album</button>
           </div>
         </div>
       </main>
-    </div> : 
+    </div> 
     <ShowCard album={this.state.album} songs={this.state.songs} showPlayer={this.state.showPlayer}/>
-    }
+  
       
       </>
     );
