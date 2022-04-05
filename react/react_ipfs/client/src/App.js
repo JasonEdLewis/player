@@ -214,20 +214,6 @@ componentDidMount = async () => {
       
       }
     
-      
-      
-
-      // const blob =new Blob([JSON.stringify(jsonPayload)],{type:"application/json"})
-      // console.log(Buffer.from(jsonPayload))
-      // https://ipfs.io/ipfs/Qmci8dZP64VjkNxh877nPmS9G9DXesRnw8NPuvL6ZnPbvt
-    // Works  https://ipfs.io/ipfs/QmdRF2BuwRw4V1QbLs6QQiqtEgRPn6wiysq8NScWugfFbq
-    //  https://ipfs.io/ipfs/QmWDXegLd7sP48K7uwYc95qTMRkoB8nCRZnfpiBMgvDvEj
-    // Album.json file hash uploaded  via ipfs-cli QmWDXegLd7sP48K7uwYc95qTMRkoB8nCRZnfpiBMgvDvEj
-    //https://ipfs.io/ipfs/QmcCwymWnVymYLYuPYTNubGw71Ru8WTqSPJXj3fcADwiGS
-    // QmWDXegLd7sP48K7uwYc95qTMRkoB8nCRZnfpiBMgvDvEj
-      // QmdRF2BuwRw4V1QbLs6QQiqtEgRPn6wiysq8NScWugfFbq
-      // 4/5/2022 1:35 am. Thought this would be successful https://ipfs.io/ipfs/QmcU8RZUmrG5qkFQTmw5bp1NsWbuFVpU4udYSP7BZazgpM
-       
    
   render() {
 
