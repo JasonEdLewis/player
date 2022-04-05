@@ -24,8 +24,7 @@ class App extends Component {
       showPlayer: false,
       contractSigner:null,
       albumSet:false,
-      albumBuffer:[],
-      albumHash:[],
+      albumHash:""
     }
     this.captureFile = this.captureFile.bind(this);
     this.onSubmit = this.onSubmit.bind(this);
@@ -50,6 +49,8 @@ componentDidMount = async () => {
   const contractSigner = contract.connect(signer)  
   this.setState({contractSigner})
   const album = await contractSigner.getAlbum()
+ 
+
   // const songs = await contractSigner.getSongs()
   console.log("the Album: ")
  
@@ -189,17 +190,28 @@ componentDidMount = async () => {
         // await this.processFilesToIpfs(this.state.albumBuffer[0])
     }
     getAlbumURI = async ( ) =>{
+      localStorage.clear()
       const payload = {
         name:this.state.album.title,
-        description:`this is A Starr's album entitled: ${this.state.album.artist} released in ${this.state.album.year}`,
+        description:`this is ${this.state.album.artist}'s album entitled: ${this.state.album.title} released in 2022`,
         image: `https://ipfs.io/ipfs/${this.state.album.cover_hash}`,
         attributes : this.state.songs
       }
-      const json_payload =  JSON.stringify({payload})
+      const json_payload =  JSON.stringify(payload)
+      await ipfs.add(Buffer.from(json_payload),(error, result) => {
+        if(error){
+          console.log(error);
+          return
+        }
+        else{
+          payload['TokenURI'] =`https://ipfs.io/ipfs/${result[0].hash}`
+         this.setState({albumHash: `https://ipfs.io/ipfs/${result[0].hash}`})
+         localStorage.setItem('album', JSON.stringify(payload))
+        }
+        console.log(this.state.albumHash)
+      })
+
       
-      const albumMetaDataFile = new File(new Blob([json_payload],"album.json"))
-      await this.readAndSetFiles(albumMetaDataFile)
-      // await this.processFilesToIpfs(this.state.albumBuffer[0])
       }
     
       
@@ -207,11 +219,14 @@ componentDidMount = async () => {
 
       // const blob =new Blob([JSON.stringify(jsonPayload)],{type:"application/json"})
       // console.log(Buffer.from(jsonPayload))
+      // https://ipfs.io/ipfs/Qmci8dZP64VjkNxh877nPmS9G9DXesRnw8NPuvL6ZnPbvt
     // Works  https://ipfs.io/ipfs/QmdRF2BuwRw4V1QbLs6QQiqtEgRPn6wiysq8NScWugfFbq
     //  https://ipfs.io/ipfs/QmWDXegLd7sP48K7uwYc95qTMRkoB8nCRZnfpiBMgvDvEj
+    // Album.json file hash uploaded  via ipfs-cli QmWDXegLd7sP48K7uwYc95qTMRkoB8nCRZnfpiBMgvDvEj
     //https://ipfs.io/ipfs/QmcCwymWnVymYLYuPYTNubGw71Ru8WTqSPJXj3fcADwiGS
     // QmWDXegLd7sP48K7uwYc95qTMRkoB8nCRZnfpiBMgvDvEj
       // QmdRF2BuwRw4V1QbLs6QQiqtEgRPn6wiysq8NScWugfFbq
+      // 4/5/2022 1:35 am. Thought this would be successful https://ipfs.io/ipfs/QmcU8RZUmrG5qkFQTmw5bp1NsWbuFVpU4udYSP7BZazgpM
        
    
   render() {
