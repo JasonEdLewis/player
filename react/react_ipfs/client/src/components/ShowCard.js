@@ -8,9 +8,9 @@ import Player from "./Player"
 export const ShowCard  = ({album, songs, showPlayer}) => {
 
   return (
-    <div style={{width: '50%', height: '50%', marginLeft:"25%"}}>
+    <div style={{width: '50%', height: '50%', marginLeft:"25%", padding:"5%"}}>
 <Card className="text-center" >
-  <Card.Header>{album.title}</Card.Header>
+  <Card.Header as="h3">{album.title}</Card.Header>
   <Card.Body>
   <Card.Img  src={`https://ipfs.io/ipfs/${album.cover_hash}`} />
     <Card.Text>
@@ -21,10 +21,9 @@ export const ShowCard  = ({album, songs, showPlayer}) => {
     </Col>
   </Row>
 </Container>
-    
     </Card.Text>
   </Card.Body>
-  <Card.Footer className="text-muted">{album.artist}</Card.Footer>
+  <Card.Footer className="text-muted" as="h3">{album.artist}</Card.Footer>
 </Card>
 </div>
   )
